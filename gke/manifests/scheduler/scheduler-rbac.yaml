@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: scheduler
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: scheduler
+rules:
+- apiGroups: ["", "apps", "batch", "extensions", "split.smi-spec.io"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: scheduler
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: scheduler
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: scheduler
+  apiGroup: rbac.authorization.k8s.io

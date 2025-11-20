@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduler
+  labels:
+    app: scheduler
+spec:
+  selector:
+    matchLabels:
+      app: scheduler
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: scheduler
+    spec:
+      containers:
+      - name: scheduler
+        image: nkastr/comm-aware:latest # aprountzos/defog:latest
+        imagePullPolicy: "IfNotPresent"
+        env:
+        - name: target_namespace
+          value: "boutique"
+        - name: cpu_max
+          value: "15"
+        - name: ram_max
+          value: "15"
+      serviceAccountName: scheduler 
+      imagePullSecrets:
+      - name: regcred

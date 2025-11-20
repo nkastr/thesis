@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduler
+  labels:
+    app: scheduler
+spec:
+  selector:
+    matchLabels:
+      app: scheduler
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: scheduler
+    spec:
+      nodeSelector:
+        name: cloud
+      containers:
+      - name: scheduler
+        image: nkastr/comm-aware-sc:41
+        imagePullPolicy: "IfNotPresent"
+        env:
+        - name: target_namespace
+          value: "default"
+        - name: cpu_percentage
+          value: "0.95"
+        - name: ram_percentage
+          value: "0.95"
+        - name: weight_a
+          value: "1"
+        - name: weight_b
+          value: "1"
+        - name: weight_c
+          value: "1"
+      serviceAccountName: scheduler 
+      imagePullSecrets:
+      - name: regcred
+

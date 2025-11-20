@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  # namespace: robot-shop
+spec:
+  replicas: 1
+  selector:
+    # service: mysql
+    matchLabels:
+      name: mysql
+  template:
+    metadata:
+      labels:
+        service: mysql
+        name: mysql
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      nodeSelector:
+        name: cloud
+      initContainers:
+      - name: post-hook
+        command:
+        - /bin/sh
+        - -c
+        - cp -r /tmp/post-scripts/* /var/lib/mysql/ && mkdir -p /var/lib/mysql/data
+        imagePullPolicy: Always
+        image: docker.io/pranavgaikwad/robot-shop-mysql-post-hook:latest
+        volumeMounts:
+        - mountPath: "/var/lib/mysql/"
+          name: mysql-data-volume
+      containers:
+      - name: dataloader
+        image: registry.access.redhat.com/rhscl/mysql-57-rhel7:latest
+        imagePullPolicy: Always
+        volumeMounts:
+        - mountPath: "/var/lib/mysql/"
+          name: mysql-data-volume
+        command:
+        - /bin/sh
+        - -c
+        - sleep 120 && zcat /var/lib/mysql/10-dump.sql.gz | /opt/rh/rh-mysql57/root/bin/mysql --force -h $MYSQL_SERVICE_HOST -u root -pR00t@123 -D $MYSQL_DATABASE -P 3306 && /opt/rh/rh-mysql57/root/bin/mysql -h $MYSQL_SERVICE_HOST -u root -pR00t@123 -P 3306 < /var/lib/mysql/20-ratings.sql && sleep infinity
+        env:
+        - name: MYSQL_USER
+          value: shipping
+        - name: MYSQL_PASSWORD
+          value: secret
+        - name: MYSQL_DATABASE
+          value: cities
+      - name: mysql
+        imagePullPolicy: Always
+        image: registry.access.redhat.com/rhscl/mysql-57-rhel7:latest
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_USER
+          value: shipping
+        - name: MYSQL_PASSWORD
+          value: secret
+        - name: MYSQL_DATABASE
+          value: cities
+        - name: MYSQL_ROOT_PASSWORD
+          value: R00t@123
+        resources:
+          limits:
+            cpu: 200m
+            memory: 800Mi
+          requests:
+            cpu: 100m
+            memory: 400Mi
+        volumeMounts:
+        - mountPath: "/var/lib/mysql"
+          name: mysql-data-volume
+      restartPolicy: Always
+      volumes:
+      - name: mysql-data-volume
+        persistentVolumeClaim:
+          claimName: mysql-data-volume-claim
